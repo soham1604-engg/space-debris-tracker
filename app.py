@@ -21,9 +21,10 @@ def fetch_tle_data():
         return []
 
     tle_lines = response.text.strip().split('\n')
-    
-    # Debug: Show first 10 lines of raw data
-    st.write("Raw TLE Data (first 10 lines):", tle_lines[:10])
+
+    if not tle_lines or len(tle_lines) < 3:
+        st.error("🚨 TLE data appears to be empty. Check Celestrak API.")
+        return []
 
     satellites = []
     for i in range(0, len(tle_lines), 3):
@@ -33,10 +34,20 @@ def fetch_tle_data():
             line2 = tle_lines[i+2].strip()
             satellites.append((name, line1, line2))
 
-    # Debug: Show first 5 satellites
-    st.write("Parsed TLE Data:", satellites[:5])
+    if not satellites:
+        st.error("🚨 No valid satellite data parsed from TLE.")
+    
+    # Debugging - Show first 5 satellites
+    st.write("First 5 Satellites:", satellites[:5])
 
     return satellites
+
+tle_data = fetch_tle_data()
+
+# Check if data is empty
+if not tle_data:
+    st.error("🚨 No satellites found. The TLE dataset is empty.")
+
 
 
 
