@@ -13,7 +13,7 @@ st.title("🚁️ Space Debris Detection & Tracking using TLE Data")
 # --- STEP 1: Load TLE Data from Celestrak ---
 @st.cache_data
 def fetch_tle_data():
-    url = "https://www.celestrak.com/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
+    url = "https://www.celestrak.com/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"
     response = requests.get(url)
 
     if response.status_code != 200:
