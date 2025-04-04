@@ -33,14 +33,18 @@ def fetch_tle_data():
     return satellites
 
 tle_data = fetch_tle_data()
+st.write("Loaded TLE Data:", tle_data[:5])  # Show first 5 entries
+
 
 # --- STEP 2: Satellite Selector ---
 tle_data_cleaned = [(s[0].strip(), s[1], s[2]) for s in tle_data]
 satellite_names = [s[0].strip() for s in tle_data]
+st.write("Extracted Satellite Names:", satellite_names[:5])
 
 
 # Satellite selector
 selected_satellite = st.selectbox("🔍 Select a Satellite", satellite_names, key="satellite_selector")
+st.write("Selected Satellite:", selected_satellite)
 
 
 # --- STEP 3: Compute Orbital Position ---
@@ -63,12 +67,14 @@ def compute_positions(name, line1, line2):
 # Get TLE for selected satellite
 line1 = line2 = None
 for sat in tle_data:
-    if sat[0].strip() == selected_satellite.strip():
+    if sat[0].strip().lower() == selected_satellite.strip().lower():
         line1, line2 = sat[1], sat[2]
         break
 
+st.write(f"Selected TLE: {line1}, {line2}")  # Debugging line
+
 if line1 is None or line2 is None:
-    st.error("Satellite TLE data not found. Please select a valid satellite.")
+    st.error("🚨 Satellite TLE data not found! Please select another satellite.")
     st.stop()
 
 # --- STEP 4: Show Data ---
