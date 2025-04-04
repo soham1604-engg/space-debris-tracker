@@ -10,21 +10,46 @@ import numpy as np
 st.set_page_config(page_title="🚁️ Space Debris Tracker", layout="wide")
 st.title("🚁️ Space Debris Detection & Tracking using TLE Data")
 
-# --- STEP 1: Load TLE Data from Celestrak ---
-
-
-
+# --- STEP 1: Load TLE Data from Celestrak (with Fallback to CSV) ---
 @st.cache_data
+def fetch_tle_data():
+    url = "https://www.celestrak.com/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            tle_lines = response.text.strip().split('\n')
+            satellites = []
+            for i in range(0, len(tle_lines), 3):
+                if i + 2 < len(tle_lines):
+                    name = tle_lines[i].strip()
+                    line1 = tle_lines[i+1].strip()
+                    line2 = tle_lines[i+2].strip()
+                    satellites.append((name, line1, line2))
+            return satellites
+
+        else:
+            st.warning(f"🌐 Celestrak request failed with HTTP {response.status_code}. Loading local data...")
+            return load_tle_from_csv()
+
+    except Exception as e:
+        st.error(f"⚠️ Failed to fetch TLE data: {e}")
+        return load_tle_from_csv()
+
 def load_tle_from_csv():
     try:
-        df = pd.read_csv("tle_data.csv")  # Ensure tle_data.csv is in the same directory
-        satellites = list(zip(df["Satellite Name"], df["TLE Line 1"], df["TLE Line 2"]))  # Updated column names
-        return satellites
+        df = pd.read_csv("tle_data.csv")
+        return list(df.itertuples(index=False, name=None))  # Convert to list of tuples
     except Exception as e:
-        st.error(f"🚨 Failed to load TLE data from CSV: {e}")
+        st.error(f"❌ Failed to load local TLE data: {e}")
         return []
 
-tle_data = load_tle_from_csv()
+tle_data = fetch_tle_data()
+
 
 
 
