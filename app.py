@@ -36,7 +36,8 @@ tle_data = fetch_tle_data()
 
 # --- STEP 2: Satellite Selector ---
 tle_data_cleaned = [(s[0].strip(), s[1], s[2]) for s in tle_data]
-satellite_names = [s[0] for s in tle_data_cleaned]
+satellite_names = [s[0].strip() for s in tle_data]
+
 
 # Satellite selector
 selected_satellite = st.selectbox("🔍 Select a Satellite", satellite_names, key="satellite_selector")
@@ -62,7 +63,7 @@ def compute_positions(name, line1, line2):
 # Get TLE for selected satellite
 line1 = line2 = None
 for sat in tle_data:
-    if sat[0] == selected_satellite:
+    if sat[0].strip() == selected_satellite.strip():
         line1, line2 = sat[1], sat[2]
         break
 
