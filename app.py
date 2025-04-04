@@ -58,8 +58,15 @@ def compute_positions(name, line1, line2):
 # Get TLE for selected satellite
 for sat in tle_data:
     if sat[0] == selected_satellite:
+       line1 = line2 = None
+for sat in tle_data:
+    if sat[0] == selected_satellite:
         line1, line2 = sat[1], sat[2]
         break
+
+if line1 is None or line2 is None:
+    st.error("❌ TLE data not found for the selected satellite.")
+    st.stop()
 
 positions_df = compute_positions(selected_satellite, line1, line2)
 st.success(f"✅ Successfully loaded data for **{selected_satellite}**")
