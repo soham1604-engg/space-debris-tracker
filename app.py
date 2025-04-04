@@ -3,9 +3,12 @@ import pandas as pd
 from skyfield.api import EarthSatellite, load
 import plotly.graph_objects as go
 import requests
+import re
+from itertools import combinations
+import numpy as np
 
-st.set_page_config(page_title="🛰️ Space Debris Tracker", layout="wide")
-st.title("🛰️ Space Debris Detection & Tracking using TLE Data")
+st.set_page_config(page_title="🚁️ Space Debris Tracker", layout="wide")
+st.title("🚁️ Space Debris Detection & Tracking using TLE Data")
 
 # --- STEP 1: Load TLE Data from Celestrak ---
 @st.cache_data
@@ -58,7 +61,7 @@ st.success(f"✅ Successfully loaded data for **{selected_satellite}**")
 # --- STEP 4: Show Data ---
 with st.expander("📄 Orbital Data (Table View)"):
     st.dataframe(positions_df)
-
+    
 # --- STEP 4.5: Satellite Info Panel ---
 with st.expander("🛰️ Satellite Information Panel"):
     st.markdown(f"""
@@ -89,6 +92,46 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig)
+
+# --- STEP 6: Collision Prediction ---
+def compute_collision_risks(tle_data, threshold_km=10):
+    ts = load.timescale()
+    times = ts.utc(2024, 4, 4, range(0, 24))
+    positions = []
+
+    for name, line1, line2 in tle_data:
+        try:
+            satellite = EarthSatellite(line1, line2, name, ts)
+            geocentric = satellite.at(times)
+            subpoint = geocentric.position.km.T  # shape: (24, 3)
+            positions.append((name, subpoint))
+        except:
+            continue
+
+    potential_collisions = []
+
+    for (name1, pos1), (name2, pos2) in combinations(positions, 2):
+        distances = np.linalg.norm(pos1 - pos2, axis=1)
+        for t_idx, dist in enumerate(distances):
+            if dist < threshold_km:
+                potential_collisions.append({
+                    "Time (UTC)": times[t_idx].utc_iso(),
+                    "Satellite 1": name1,
+                    "Satellite 2": name2,
+                    "Distance (km)": round(dist, 2)
+                })
+
+    return pd.DataFrame(potential_collisions)
+
+with st.expander("🚨 Collision Prediction"):
+    st.write("Calculating potential close encounters...")
+    collisions_df = compute_collision_risks(tle_data, threshold_km=10)
+
+    if not collisions_df.empty:
+        st.warning("⚠️ Potential close approaches detected!")
+        st.dataframe(collisions_df)
+    else:
+        st.success("✅ No potential collisions detected for selected day.")
 
 # --- Footer ---
 st.markdown("---")
