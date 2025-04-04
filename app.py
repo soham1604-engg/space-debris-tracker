@@ -57,7 +57,7 @@ tle_data = fetch_tle_data()
 # --- STEP 2: Satellite Selector ---
 tle_data_cleaned = [(s[0].strip(), s[1], s[2]) for s in tle_data]
 satellite_names = [s[0].strip() for s in tle_data]
-st.write("Extracted Satellite Names:", satellite_names[:5])
+
 
 
 # Satellite selector
