@@ -3,7 +3,6 @@ import pandas as pd
 from skyfield.api import EarthSatellite, load
 import plotly.graph_objects as go
 import requests
-import re
 from itertools import combinations
 import numpy as np
 
@@ -61,7 +60,7 @@ st.success(f"✅ Successfully loaded data for **{selected_satellite}**")
 # --- STEP 4: Show Data ---
 with st.expander("📄 Orbital Data (Table View)"):
     st.dataframe(positions_df)
-    
+
 # --- STEP 4.5: Satellite Info Panel ---
 with st.expander("🛰️ Satellite Information Panel"):
     st.markdown(f"""
@@ -93,7 +92,7 @@ fig.update_layout(
 
 st.plotly_chart(fig)
 
-# --- STEP 6: Collision Prediction ---
+# --- STEP 6: Collision Prediction with Progress Bar ---
 def compute_collision_risks(tle_data, threshold_km=10):
     ts = load.timescale()
     times = ts.utc(2024, 4, 4, range(0, 24))
@@ -109,8 +108,10 @@ def compute_collision_risks(tle_data, threshold_km=10):
             continue
 
     potential_collisions = []
+    total_pairs = len(positions) * (len(positions) - 1) // 2
+    progress = st.progress(0, text="🚨 Analyzing satellite pairs...")
 
-    for (name1, pos1), (name2, pos2) in combinations(positions, 2):
+    for idx, ((name1, pos1), (name2, pos2)) in enumerate(combinations(positions, 2)):
         distances = np.linalg.norm(pos1 - pos2, axis=1)
         for t_idx, dist in enumerate(distances):
             if dist < threshold_km:
@@ -120,6 +121,7 @@ def compute_collision_risks(tle_data, threshold_km=10):
                     "Satellite 2": name2,
                     "Distance (km)": round(dist, 2)
                 })
+        progress.progress((idx + 1) / total_pairs)
 
     return pd.DataFrame(potential_collisions)
 
