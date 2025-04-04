@@ -99,16 +99,24 @@ def compute_collision_risks(tle_data, threshold_km=10):
     times = ts.utc(2024, 4, 4, range(0, 24))
     positions = []
 
-    for name, line1, line2 in tle_data:
+    progress_bar = st.progress(0, text="Loading satellite positions...")
+
+    for idx, (name, line1, line2) in enumerate(tle_data[:50]):  # Limit to 50 for speed
         try:
             satellite = EarthSatellite(line1, line2, name, ts)
             geocentric = satellite.at(times)
-            subpoint = geocentric.position.km.T  # shape: (24, 3)
-            positions.append((name, subpoint))
+            pos = geocentric.position.km.T  # (24, 3)
+            positions.append((name, pos))
         except:
             continue
+        progress_bar.progress((idx + 1) / min(50, len(tle_data)), text=f"Processed {idx + 1} satellites")
+
+    progress_bar.empty()
 
     potential_collisions = []
+    total_pairs = len(list(combinations(positions, 2)))
+    pair_counter = 0
+    progress = st.progress(0, text="Checking for potential collisions...")
 
     for (name1, pos1), (name2, pos2) in combinations(positions, 2):
         distances = np.linalg.norm(pos1 - pos2, axis=1)
@@ -120,8 +128,12 @@ def compute_collision_risks(tle_data, threshold_km=10):
                     "Satellite 2": name2,
                     "Distance (km)": round(dist, 2)
                 })
+        pair_counter += 1
+        progress.progress(pair_counter / total_pairs, text=f"Checked {pair_counter}/{total_pairs} satellite pairs")
 
+    progress.empty()
     return pd.DataFrame(potential_collisions)
+
 
 with st.expander("🚨 Collision Prediction"):
     st.write("Calculating potential close encounters...")
