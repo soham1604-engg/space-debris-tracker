@@ -11,43 +11,19 @@ st.set_page_config(page_title="🚁️ Space Debris Tracker", layout="wide")
 st.title("🚁️ Space Debris Detection & Tracking using TLE Data")
 
 # --- STEP 1: Load TLE Data from Celestrak ---
+
+
 @st.cache_data
-def fetch_tle_data():
-    url = "https://www.celestrak.com/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
-    }
-    
-    response = requests.get(url, headers=headers)
-
-    if response.status_code != 200:
-        st.error(f"🚨 Failed to fetch TLE data! HTTP {response.status_code}")
+def load_tle_from_csv():
+    try:
+        df = pd.read_csv("tle_data.csv")  # Ensure tle_data.csv is in the same directory
+        satellites = list(zip(df["Name"], df["Line1"], df["Line2"]))
+        return satellites
+    except Exception as e:
+        st.error(f"🚨 Failed to load TLE data from CSV: {e}")
         return []
 
-    tle_lines = response.text.strip().split('\n')
-
-    if not tle_lines or len(tle_lines) < 3:
-        st.error("🚨 TLE data appears to be empty. Check Celestrak API.")
-        return []
-
-    satellites = []
-    for i in range(0, len(tle_lines), 3):
-        if i + 2 < len(tle_lines):
-            name = tle_lines[i].strip()
-            line1 = tle_lines[i+1].strip()
-            line2 = tle_lines[i+2].strip()
-            satellites.append((name, line1, line2))
-
-    if not satellites:
-        st.error("🚨 No valid satellite data parsed from TLE.")
-    
-    return satellites
-
-tle_data = fetch_tle_data()
-
-if not tle_data:
-    st.error("🚨 No satellites found. The TLE dataset is empty.")
+tle_data = load_tle_from_csv()
 
 
 
