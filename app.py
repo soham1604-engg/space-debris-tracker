@@ -15,24 +15,29 @@ st.title("🚁️ Space Debris Detection & Tracking using TLE Data")
 def fetch_tle_data():
     url = "https://www.celestrak.com/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
     response = requests.get(url)
+
+    if response.status_code != 200:
+        st.error(f"🚨 Failed to fetch TLE data! HTTP {response.status_code}")
+        return []
+
     tle_lines = response.text.strip().split('\n')
+    
+    # Debug: Show first 10 lines of raw data
+    st.write("Raw TLE Data (first 10 lines):", tle_lines[:10])
 
     satellites = []
-    i = 0
-    while i < len(tle_lines) - 2:
-        name = tle_lines[i].strip()
-        line1 = tle_lines[i+1].strip()
-        line2 = tle_lines[i+2].strip()
-
-        # Optional: Basic validation
-        if line1.startswith('1 ') and line2.startswith('2 '):
+    for i in range(0, len(tle_lines), 3):
+        if i + 2 < len(tle_lines):
+            name = tle_lines[i].strip()
+            line1 = tle_lines[i+1].strip()
+            line2 = tle_lines[i+2].strip()
             satellites.append((name, line1, line2))
-            i += 3
-        else:
-            i += 1  # Skip broken set
+
+    # Debug: Show first 5 satellites
+    st.write("Parsed TLE Data:", satellites[:5])
+
     return satellites
 
-tle_data = fetch_tle_data()
 st.write("Loaded TLE Data:", tle_data[:5])  # Show first 5 entries
 
 
