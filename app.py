@@ -38,7 +38,6 @@ def fetch_tle_data():
 
     return satellites
 
-st.write("Loaded TLE Data:", tle_data[:5])  # Show first 5 entries
 
 
 # --- STEP 2: Satellite Selector ---
