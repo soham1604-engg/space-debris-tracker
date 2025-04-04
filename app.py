@@ -2,79 +2,87 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from skyfield.api import load
+from datetime import datetime, timedelta
+from skyfield.api import EarthSatellite, load, wgs84
 import requests
 
-# 🚀 Step 1: Fetch TLE Data
-def fetch_tle_data():
-    TLE_URL = "https://www.celestrak.com/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
-    response = requests.get(TLE_URL)
-    tle_data = response.text.strip().split('\n')
-    return tle_data
+st.set_page_config(page_title="Space Debris Tracker", layout="wide")
+st.title("🚀 Real-Time Space Debris Tracker using TLE Data")
 
-def parse_tle_data(tle_data):
+# --- Load TLE Data from Celestrak ---
+@st.cache_data(show_spinner=False)
+def load_tle():
+    url = "https://celestrak.com/NORAD/elements/active.txt"
+    response = requests.get(url)
+    lines = response.text.strip().splitlines()
     satellites = []
-    for i in range(0, len(tle_data), 3):
+    for i in range(0, len(lines), 3):
         try:
-            name, line1, line2 = tle_data[i], tle_data[i+1], tle_data[i+2]
-            satellites.append((name.strip(), line1.strip(), line2.strip()))
-        except IndexError:
+            name = lines[i].strip()
+            line1 = lines[i+1].strip()
+            line2 = lines[i+2].strip()
+            sat = EarthSatellite(line1, line2, name, load.timescale())
+            satellites.append(sat)
+        except Exception:
             continue
     return satellites
 
-# Load TLE Data
-st.title("🚀 Space Debris Tracker")
-tle_data = fetch_tle_data()
-satellites = parse_tle_data(tle_data)
+satellites = load_tle()
+st.sidebar.success(f"Loaded {len(satellites)} satellites")
 
-if not satellites:
-    st.error("❌ Failed to load TLE data. Try refreshing.")
-    st.stop()
+# --- Sidebar to select satellite ---
+selected_satellite = st.sidebar.selectbox("Select Satellite", [sat.name for sat in satellites])
+sat = next(s for s in satellites if s.name == selected_satellite)
 
-satellite_names = [sat[0] for sat in satellites]
-selected_satellite = st.selectbox("Select a Satellite", satellite_names)
-
-# 🚀 Step 2: Compute Orbital Positions
-@st.cache_data
-def compute_orbital_positions(name):
+# --- Compute Position Over Time ---
+@st.cache_data(show_spinner=False)
+def compute_positions(sat):
     ts = load.timescale()
-    satellite = next((sat for sat in satellites if sat[0] == name), None)
-    if not satellite:
-        return None
-    name, line1, line2 = satellite
-    sat = load.tle(line1, line2)
-    times = ts.utc(2025, 4, range(0, 24))
-    geocentric = sat.at(times)
-    subpoint = geocentric.subpoint()
-    return pd.DataFrame({
-        "Time": times.utc_datetime(),
-        "Latitude": subpoint.latitude.degrees,
-        "Longitude": subpoint.longitude.degrees,
-        "Altitude": subpoint.elevation.km,
-        "Satellite Name": [name] * len(times)
-    })
+    now = datetime.utcnow()
+    times = ts.utc(now.year, now.month, now.day, range(0, 60))  # Every minute for 1 hour
+    data = []
+    for t in times:
+        geo = sat.at(t)
+        subpoint = wgs84.subpoint(geo)
+        data.append({
+            "Time": t.utc_datetime(),
+            "Latitude": subpoint.latitude.degrees,
+            "Longitude": subpoint.longitude.degrees,
+            "Elevation_km": subpoint.elevation.km
+        })
+    return pd.DataFrame(data)
 
-positions_df = compute_orbital_positions(selected_satellite)
-if positions_df is None:
-    st.error("❌ Could not compute positions.")
-    st.stop()
+positions_df = compute_positions(sat)
 
-st.write("### Orbital Positions Table")
+# --- Display Table ---
+st.subheader("🔢 Satellite Position Data (Next 1 Hour)")
 st.dataframe(positions_df)
 
-# 🚀 Step 3: Visualize Satellite Orbit
-fig = go.Figure()
-fig.add_trace(go.Scattergeo(
-    lon=positions_df["Longitude"],
+# --- Plot Path ---
+st.subheader("🌏 Orbit Path Visualization")
+fig = go.Figure(go.Scattergeo(
     lat=positions_df["Latitude"],
-    mode='markers',
-    marker=dict(size=5, color='red'),
+    lon=positions_df["Longitude"],
+    mode='lines+markers',
+    line=dict(width=2, color='red'),
+    marker=dict(size=4, color='blue'),
     name=selected_satellite
 ))
 fig.update_layout(
-    title=f"Orbit Path of {selected_satellite}",
-    geo=dict(projection_type='orthographic')
+    geo=dict(
+        projection_type="natural earth",
+        showland=True,
+        landcolor="rgb(243, 243, 243)",
+        subunitwidth=1,
+        countrywidth=1,
+        showocean=True,
+        oceancolor="lightblue",
+    ),
+    margin={"r":0,"t":0,"l":0,"b":0},
+    height=500
 )
-st.plotly_chart(fig)
+st.plotly_chart(fig, use_container_width=True)
 
-st.success("✅ Live Satellite Tracking Running!")
+# --- Footer ---
+st.markdown("---")
+st.markdown("Developed by Soham | 📡 Powered by Skyfield, Streamlit & Plotly")
