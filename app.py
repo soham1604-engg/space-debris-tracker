@@ -18,18 +18,24 @@ def fetch_tle_data():
     tle_lines = response.text.strip().split('\n')
 
     satellites = []
-    for i in range(0, len(tle_lines), 3):
-        if i + 2 < len(tle_lines):
-            name = tle_lines[i].strip()
-            line1 = tle_lines[i+1].strip()
-            line2 = tle_lines[i+2].strip()
+    i = 0
+    while i < len(tle_lines) - 2:
+        name = tle_lines[i].strip()
+        line1 = tle_lines[i+1].strip()
+        line2 = tle_lines[i+2].strip()
+
+        # Optional: Basic validation
+        if line1.startswith('1 ') and line2.startswith('2 '):
             satellites.append((name, line1, line2))
+            i += 3
+        else:
+            i += 1  # Skip broken set
     return satellites
 
 tle_data = fetch_tle_data()
 
 # --- STEP 2: Satellite Selector ---
-satellite_names = [s[0] for s in tle_data]
+satellite_names = [s[0] for s in tle_data]  # s[0] = satellite name
 selected_satellite = st.selectbox("🔍 Select a Satellite", satellite_names)
 
 # --- STEP 3: Compute Orbital Position ---
