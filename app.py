@@ -58,11 +58,17 @@ def compute_positions(name, line1, line2):
     return df
 
 # Get TLE for selected satellite
-line1 = line2 = None
-for sat in tle_data:
-    if sat[0].strip().lower() == selected_satellite.strip().lower():
-        line1, line2 = sat[1], sat[2]
-        break
+# Ensure selected satellite exists in the TLE data
+selected_tle = next((sat for sat in tle_data if sat[0] == selected_satellite), None)
+
+if selected_tle:
+    line1, line2 = selected_tle[1], selected_tle[2]
+    positions_df = compute_positions(selected_satellite, line1, line2)
+    st.success(f"✅ Successfully loaded data for **{selected_satellite}**")
+else:
+    st.error("🚨 Selected satellite's TLE data not found. Please check the dataset.")
+    positions_df = pd.DataFrame()  # Create an empty dataframe to prevent errors
+
 
 st.write(f"Selected TLE: {line1}, {line2}")  # Debugging line
 
