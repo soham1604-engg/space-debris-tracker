@@ -13,13 +13,12 @@ st.title("🚁️ Space Debris Detection & Tracking using TLE Data")
 # --- STEP 1: Load TLE Data from Celestrak ---
 
 
-import pandas as pd
 
 @st.cache_data
 def load_tle_from_csv():
     try:
         df = pd.read_csv("tle_data.csv")  # Ensure tle_data.csv is in the same directory
-        satellites = list(zip(df["Satellite Name"], df["Line1"], df["Line2"]))  # Use "Satellite Name" column
+        satellites = list(zip(df["Satellite Name"], df["TLE Line 1"], df["TLE Line 2"]))  # Updated column names
         return satellites
     except Exception as e:
         st.error(f"🚨 Failed to load TLE data from CSV: {e}")
