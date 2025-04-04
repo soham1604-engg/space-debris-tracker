@@ -13,8 +13,13 @@ st.title("🚁️ Space Debris Detection & Tracking using TLE Data")
 # --- STEP 1: Load TLE Data from Celestrak ---
 @st.cache_data
 def fetch_tle_data():
-    url = "https://www.celestrak.com/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"
-    response = requests.get(url)
+    url = "https://www.celestrak.com/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+    }
+    
+    response = requests.get(url, headers=headers)
 
     if response.status_code != 200:
         st.error(f"🚨 Failed to fetch TLE data! HTTP {response.status_code}")
@@ -37,14 +42,10 @@ def fetch_tle_data():
     if not satellites:
         st.error("🚨 No valid satellite data parsed from TLE.")
     
-    # Debugging - Show first 5 satellites
-    st.write("First 5 Satellites:", satellites[:5])
-
     return satellites
 
 tle_data = fetch_tle_data()
 
-# Check if data is empty
 if not tle_data:
     st.error("🚨 No satellites found. The TLE dataset is empty.")
 
