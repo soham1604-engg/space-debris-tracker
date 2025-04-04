@@ -35,7 +35,8 @@ def fetch_tle_data():
 tle_data = fetch_tle_data()
 
 # --- STEP 2: Satellite Selector ---
-satellite_names = [s[0] for s in tle_data]  # s[0] = satellite name
+satellite_names = [s[0].strip() for s in tle_data]
+tle_data = [(s[0].strip(), s[1], s[2]) for s in tle_data]  # Clean names here too
 selected_satellite = st.selectbox("🔍 Select a Satellite", satellite_names)
 
 # --- STEP 3: Compute Orbital Position ---
