@@ -39,7 +39,8 @@ tle_data_cleaned = [(s[0].strip(), s[1], s[2]) for s in tle_data]
 satellite_names = [s[0] for s in tle_data_cleaned]
 
 # Satellite selector
-selected_satellite = st.selectbox("🔍 Select a Satellite", satellite_names)
+selected_satellite = st.selectbox("🔍 Select a Satellite", satellite_names, key="satellite_selector")
+
 
 # --- STEP 3: Compute Orbital Position ---
 def compute_positions(name, line1, line2):
